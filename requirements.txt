@@ -1,0 +1,6 @@
+pyrogram
+py-tgcalls
+yt-dlp
+motor
+dnspython
+ffmpeg-python

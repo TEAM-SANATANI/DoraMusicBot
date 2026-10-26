@@ -17,7 +17,7 @@ import os
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import AudioPiped
+from pytgcalls.types import AudioPiped
 from yt_dlp import YoutubeDL
 
 import config
@@ -123,10 +123,14 @@ async def play_cmd(client, message: Message):
 
     if len(queues[chat_id]) == 1:
         try:
-            await call_app.play(chat_id, AudioPiped(url))
+            await call_app.join_group_call(chat_id, AudioPiped(url))
             await m.edit(f"🎶 **Now Playing by Assistant:** [{title}]({link})")
         except Exception as e:
-            await m.edit(f"❌ Voice Chat connect nahi ho saka. Group me Voice Chat start karein.\n\nError: {e}")
+            try:
+                await call_app.change_stream(chat_id, AudioPiped(url))
+                await m.edit(f"🎶 **Now Playing by Assistant:** [{title}]({link})")
+            except Exception as ex:
+                await m.edit(f"❌ Voice Chat connect nahi ho saka. Group me Voice Chat start karein.\n\nError: {ex}")
     else:
         await m.edit(f"➕ **Added to Queue (#{len(queues[chat_id])}):** [{title}]({link})")
 
@@ -148,13 +152,13 @@ async def stream_end_handler(client, update):
 
     if chat_id in queues and len(queues[chat_id]) > 0:
         next_track = queues[chat_id][0]
-        await call_app.play(chat_id, AudioPiped(next_track['url']))
+        await call_app.change_stream(chat_id, AudioPiped(next_track['url']))
         await app.send_message(chat_id, f"🎶 **Auto-Playing Next:** [{next_track['title']}]({next_track['link']})")
     else:
         is_autoplay = await db.get_autoplay(chat_id)
         if is_autoplay:
             url, title, duration, link = get_yt_audio("Hindi Top Songs 2026")
-            await call_app.play(chat_id, AudioPiped(url))
+            await call_app.change_stream(chat_id, AudioPiped(url))
             await app.send_message(chat_id, f"🔁 **Autoplay Triggered:** [{title}]({link})")
 
 async def main():

@@ -1,5 +1,19 @@
-import time
+import sys
 import asyncio
+
+# Python 3.14 event loop compatibility fix
+if sys.version_info >= (3, 10):
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        try:
+            loop = asyncio.get_event_loop_policy().get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+import time
+import os
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pytgcalls import PyTgCalls
@@ -36,7 +50,6 @@ def get_yt_audio(query: str):
         info = ytdl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
         return info['url'], info['title'], info['duration'], info['webpage_url']
 
-# Helper Function: Auto Join Assistant if not in Group
 async def join_assistant(chat_id: int):
     try:
         await userbot.get_chat_member(chat_id, "me")
@@ -51,6 +64,36 @@ async def join_assistant(chat_id: int):
         except Exception as e:
             raise Exception(f"Assistant group join nahi kar saka. Pehle Assistant ID ko group me add karein. Error: {e}")
 
+@app.on_message(filters.command("start"))
+async def start_cmd(client, message: Message):
+    await db.add_user(message.from_user.id)
+    if message.chat.type.value in ["group", "supergroup"]:
+        await db.add_chat(message.chat.id)
+
+    caption = (
+        f"✨ **Welcome to {config.BOT_NAME}!**\n\n"
+        f"🎵 High-quality music player for your Telegram Voice Chats.\n\n"
+        f"• Direct YT Search & Playback\n"
+        f"• Auto-play Next Track\n"
+        f"• Speed & Ping Diagnostics"
+    )
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{client.me.username}?startgroup=true")],
+        [InlineKeyboardButton("📢 Support", url="https://t.me/Telegram"), InlineKeyboardButton("⚙️ Settings", callback_data="settings_menu")]
+    ])
+    await message.reply_photo(photo=config.START_IMAGE_URL, caption=caption, reply_markup=buttons)
+
+@app.on_message(filters.command("ping"))
+async def ping_cmd(client, message: Message):
+    start_time = time.time()
+    msg = await message.reply("⏳ Checking latency...")
+    end_time = time.time()
+    ping_ms = round((end_time - start_time) * 1000, 2)
+
+    caption = f"🚀 **{config.BOT_NAME} Status**\n\n⚡ **Latency:** `{ping_ms} ms`\n🤖 **Engine Status:** Online"
+    await msg.delete()
+    await message.reply_photo(photo=config.PING_IMAGE_URL, caption=caption)
+
 @app.on_message(filters.command("play") & filters.group)
 async def play_cmd(client, message: Message):
     chat_id = message.chat.id
@@ -61,13 +104,11 @@ async def play_cmd(client, message: Message):
     query = " ".join(message.command[1:])
     m = await message.reply("🔎 **Searching & Preparing Assistant...**")
 
-    # Step 1: Ensure Assistant is in group
     try:
         await join_assistant(chat_id)
     except Exception as e:
         return await m.edit(f"❌ {e}")
 
-    # Step 2: Fetch Youtube Audio Stream
     try:
         url, title, duration, link = get_yt_audio(query)
     except Exception as e:
@@ -80,7 +121,6 @@ async def play_cmd(client, message: Message):
 
     queues[chat_id].append(track)
 
-    # Step 3: Stream song via Assistant ID
     if len(queues[chat_id]) == 1:
         try:
             await call_app.play(chat_id, AudioPiped(url))
@@ -89,6 +129,16 @@ async def play_cmd(client, message: Message):
             await m.edit(f"❌ Voice Chat connect nahi ho saka. Group me Voice Chat start karein.\n\nError: {e}")
     else:
         await m.edit(f"➕ **Added to Queue (#{len(queues[chat_id])}):** [{title}]({link})")
+
+@app.on_message(filters.command("autoplay") & filters.group)
+async def toggle_autoplay(client, message: Message):
+    chat_id = message.chat.id
+    current_state = await db.get_autoplay(chat_id)
+    new_state = not current_state
+    await db.set_autoplay(chat_id, new_state)
+
+    status = "Enabled 🟢" if new_state else "Disabled 🔴"
+    await message.reply(f"🔁 **Autoplay status updated:** {status}")
 
 @call_app.on_stream_end()
 async def stream_end_handler(client, update):

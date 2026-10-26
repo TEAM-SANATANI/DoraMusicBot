@@ -1,16 +1,16 @@
 import sys
 import asyncio
 
-# Python 3.14 event loop compatibility fix
+# Python 3.10+ Event Loop Clean Fix
 if sys.version_info >= (3, 10):
     try:
-        asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
     except RuntimeError:
         try:
-            loop = asyncio.get_event_loop_policy().get_event_loop()
-        except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+        except Exception:
+            pass
 
 import time
 import os
@@ -73,7 +73,7 @@ async def start_cmd(client, message: Message):
     caption = (
         f"✨ **Welcome to {config.BOT_NAME}!**\n\n"
         f"🎵 High-quality music player for your Telegram Voice Chats.\n\n"
-        f"• Direct YT Search & Playback\n"
+        f"• Direct YT Search & Playback via Assistant ID\n"
         f"• Auto-play Next Track\n"
         f"• Speed & Ping Diagnostics"
     )

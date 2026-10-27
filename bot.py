@@ -14,7 +14,7 @@ import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioPiped  # <-- PyTgCalls v3 mein direct types se import hota hai ya media types
+from pytgcalls.types import AudioPiped
 from motor.motor_asyncio import AsyncIOMotorClient
 import yt_dlp
 import requests
@@ -77,7 +77,7 @@ async def play_song(client: Client, message: Message):
     try:
         audio_url, title = get_audio_url(query)
         
-        await call_py.play(
+        await call_py.join_call(
             chat_id,
             AudioPiped(audio_url)
         )

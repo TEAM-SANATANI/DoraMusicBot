@@ -14,7 +14,7 @@ import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import AudioPiped  # <-- Fixed import path for v3.x
+from pytgcalls.types import AudioPiped  # <-- PyTgCalls v3 mein direct types se import hota hai ya media types
 from motor.motor_asyncio import AsyncIOMotorClient
 import yt_dlp
 import requests

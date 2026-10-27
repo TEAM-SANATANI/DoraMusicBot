@@ -1,23 +1,21 @@
 services:
-  - type: worker
+  - type: web
     name: dora-music-bot
     env: python
-    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
-    startCommand: "python bot.py"
+    region: ohio
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.8
       - key: API_ID
         sync: false
       - key: API_HASH
         sync: false
       - key: BOT_TOKEN
         sync: false
-      - key: SESSION_STRING
+      - key: STRING_SESSION
         sync: false
-      - key: MONGO_DB_URI
+      - key: MONGO_URL
         sync: false
-      - key: START_IMAGE_URL
-        value: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1200&q=80"
-      - key: PING_IMAGE_URL
-        value: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=1200&q=80"
+      - key: LOG_CHANNEL_ID
+        sync: false

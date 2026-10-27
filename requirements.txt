@@ -1,8 +1,7 @@
 pyrogram==2.0.106
 tgcrypto
-py-tgcalls==2.0.4
+py-tgcalls
 yt-dlp
-motor
-fastapi
-uvicorn
+pymongo
+flask
 requests

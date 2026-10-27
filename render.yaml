@@ -1,14 +1,10 @@
 services:
   - type: web
     name: dora-music-bot
-    env: python
-    region: ohio
+    env: docker
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: python bot.py
+    region: singapore
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
       - key: API_ID
         sync: false
       - key: API_HASH
@@ -17,7 +13,7 @@ services:
         sync: false
       - key: STRING_SESSION
         sync: false
-      - key: MONGO_URL
+      - key: MONGO_DB_URI
         sync: false
-      - key: LOG_CHANNEL_ID
-        sync: false
+      - key: PORT
+        value: 8080

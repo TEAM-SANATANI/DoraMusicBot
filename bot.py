@@ -3,6 +3,7 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pytgcalls import GroupCallFactory  # ya pytgcalls methods
 from pytgcalls import PyTgCalls
 from pytgcalls.types import AudioPiped
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -14,17 +15,18 @@ from keep_alive import keep_alive
 API_ID = int(os.getenv("API_ID", "0"))
 API_HASH = os.getenv("API_HASH", "")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-STRING_SESSION = os.getenv("STRING_SESSION", "")  # Assistant userbot session string
+STRING_SESSION = os.getenv("STRING_SESSION", "")
 MONGO_URL = os.getenv("MONGO_URL", "")
-LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))  # Telegram Channel ID for logs
+LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))
 
-# Logging Setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Clients Initialization (Dora Music Bot)
 app = Client("DoraMusicBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 assistant = Client("DoraAssistant", api_id=API_ID, api_hash=API_HASH, session_string=STRING_SESSION)
+
+# PyTgCalls initialization for modern v2+
 call_py = PyTgCalls(assistant)
 
 # MongoDB Database Client
@@ -33,7 +35,6 @@ db = db_client["dora_music_bot_db"]
 chats_col = db["active_chats"]
 
 def send_log(text: str):
-    """Sends status and error logs to your Telegram log channel"""
     if LOG_CHANNEL_ID and BOT_TOKEN:
         try:
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -42,7 +43,6 @@ def send_log(text: str):
         except Exception as e:
             logger.error(f"Failed to send Telegram log: {e}")
 
-# Helper to get audio stream URL from YouTube
 def get_audio_url(query: str):
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -68,8 +68,8 @@ async def play_song(client: Client, message: Message):
     try:
         audio_url, title = get_audio_url(query)
         
-        # Assistant joins voice chat and plays audio
-        await call_py.join_call(
+        # Modern PyTgCalls play method
+        await call_py.play(
             chat_id,
             AudioPiped(audio_url)
         )
@@ -77,7 +77,6 @@ async def play_song(client: Client, message: Message):
         await msg.edit(f"▶️ **Playing:** {title}\n👤 **Played by:** Assistant ID\n🤖 **Bot:** Dora Music Bot")
         send_log(f"✅ Song played in chat `{chat_id}`: *{title}*")
         
-        # Save state in MongoDB
         await chats_col.update_one({"chat_id": chat_id}, {"$set": {"status": "playing", "last_song": title}}, upsert=True)
 
     except Exception as e:
@@ -97,11 +96,9 @@ async def stop_song(client: Client, message: Message):
         await message.reply(f"❌ Error: {str(e)}")
 
 async def main():
-    # Start web server for uptime pinging
     keep_alive()
     send_log("🚀 Dora Music Bot, Assistant, and Web Server starting up on Render...")
     
-    # Start Clients
     await app.start()
     await assistant.start()
     await call_py.start()

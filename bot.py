@@ -1,7 +1,7 @@
 import sys
 import asyncio
 
-# Python 3.10+ & Pyrogram compatibility fix for MainThread event loop
+# Python compatibility fix for MainThread event loop
 if sys.version_info >= (3, 10):
     try:
         asyncio.get_running_loop()
@@ -14,7 +14,7 @@ import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioPiped
+from pytgcalls.types.input_stream import AudioPiped  # <-- Fixed import path for v3.x
 from motor.motor_asyncio import AsyncIOMotorClient
 import yt_dlp
 import requests

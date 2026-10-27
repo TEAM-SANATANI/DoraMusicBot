@@ -1,9 +1,18 @@
-import os
+import sys
 import asyncio
+
+# Python 3.10+ & Pyrogram compatibility fix for MainThread event loop
+if sys.version_info >= (3, 10):
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+import os
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pytgcalls import GroupCallFactory  # ya pytgcalls methods
 from pytgcalls import PyTgCalls
 from pytgcalls.types import AudioPiped
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -19,14 +28,13 @@ STRING_SESSION = os.getenv("STRING_SESSION", "")
 MONGO_URL = os.getenv("MONGO_URL", "")
 LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0"))
 
+# Logging Setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Clients Initialization (Dora Music Bot)
 app = Client("DoraMusicBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 assistant = Client("DoraAssistant", api_id=API_ID, api_hash=API_HASH, session_string=STRING_SESSION)
-
-# PyTgCalls initialization for modern v2+
 call_py = PyTgCalls(assistant)
 
 # MongoDB Database Client
@@ -35,6 +43,7 @@ db = db_client["dora_music_bot_db"]
 chats_col = db["active_chats"]
 
 def send_log(text: str):
+    """Sends status and error logs to your Telegram log channel"""
     if LOG_CHANNEL_ID and BOT_TOKEN:
         try:
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -68,7 +77,6 @@ async def play_song(client: Client, message: Message):
     try:
         audio_url, title = get_audio_url(query)
         
-        # Modern PyTgCalls play method
         await call_py.play(
             chat_id,
             AudioPiped(audio_url)
